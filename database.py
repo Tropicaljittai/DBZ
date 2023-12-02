@@ -18,10 +18,26 @@ def create_table():
     connect.commit
     connect.close
 
+def fetch_stocks(id):
+    connect = sqlite3.connect('Products.db')
+    cursor = connect.cursor()
+    cursor.execute('SELECT ProductStock FROM Products WHERE id = ?', (id,))
+    Products = cursor.fetchone()
+    connect.close()
+    return Products
+
 def fetch_for_home():
     connect = sqlite3.connect('Products.db')
     cursor = connect.cursor()
     cursor.execute('SELECT id, ProductName, Price FROM Products')
+    Products = cursor.fetchall()
+    connect.close()
+    return Products
+
+def fetchPOS(id):
+    connect = sqlite3.connect('Products.db')
+    cursor = connect.cursor()
+    cursor.execute('SELECT ProductName, Price, ProductStock FROM Products WHERE id = ?', (id,))
     Products = cursor.fetchall()
     connect.close()
     return Products
@@ -162,10 +178,10 @@ def fetch_orders():
     connect.close()
     return Products
 
-def insert_orders(id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType):
+def insert_orders(id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId):
     connect = sqlite3.connect('Products.db')
     cursor = connect.cursor()
-    cursor.execute('INSERT INTO Orders (id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType) VALUES (?, ?, ?, ?, ?, ?, ?)', (id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType))
+    cursor.execute('INSERT INTO Orders (id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId))
     connect.commit()
     connect.close()
 
@@ -176,10 +192,10 @@ def delete_orders(id):
     connect.commit()
     connect.close()
 
-def update_orders(id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType):
+def update_orders(id, OrderQuantity, OrderStatus, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId):
     connect = sqlite3.connect('Products.db')
     cursor = connect.cursor()
-    cursor.execute("UPDATE Orders SET OrderQuantity = ?, OrderStatus = ?, OrderDate = ?, OrderTotal = ?, InvoiceNum = ?, PaymentType = ? WHERE OrderId = ?", ( OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType, id))
+    cursor.execute("UPDATE Orders SET OrderQuantity = ?, OrderStatus = ?, OrderTotal = ?, InvoiceNum = ?, PaymentType = ?, Pay = ?, Due = ?, CustomerId = ? WHERE OrderId = ?", ( OrderQuantity, OrderStatus, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId, id))
     connect.commit()
     connect.close()
 
@@ -216,6 +232,13 @@ def fetch_customer():
     connect.close()
     return Products
 
+def fetch_customer_ids():
+    connect = sqlite3.connect('Products.db')
+    cursor = connect.cursor()
+    cursor.execute('SELECT id, name FROM Customer')
+    Products = cursor.fetchall()
+    connect.close()
+    return Products
 
 
 def insert_Customer(id, name, email, phone, address, bankName, accNum, account_holder):

@@ -45,7 +45,62 @@ class App(customtkinter.CTk):
         self.sidebar_button_5.grid(row=6, column=0, padx=20, pady=10)
         self.sidebar_button_6 = customtkinter.CTkButton(self.sidebar_frame, text="Sales")
         self.sidebar_button_6.grid(row=7, column=0, padx=20, pady=10)
+    def calculate_sum(self):
+        # Calculate the sum of all total entry box values
+        total_sum = sum(float(entry_set[3].get()) for entry_set in self.entries_in_scrollable_frame)
 
+        # Update the readonly entry with the calculated sum
+        self.sum_entry.configure(state='normal')
+        self.sum_entry.delete(0, 'end')
+        self.sum_entry.insert(0, int(total_sum))
+        self.sum_entry.configure(state='readonly')
+
+    def on_qty_entry_return_pressed(self, event, id, price_entry, qty_entry, total_entry):
+            available = database.fetch_stocks(id)
+            if int(qty_entry.get()) <= available[0]:
+                try:
+                    # Get the quantity entered by the user
+                    quantity = int(qty_entry.get())
+
+                    # Get the price from the readonly entry
+                    price = float(price_entry.get())
+
+                    # Calculate the total
+                    total = quantity * price
+
+                    # Update the total entry with the calculated total
+                    total_entry.configure(state = "normal")
+                    total_entry.delete(0, 'end')
+                    total_entry.insert(0, int(total))
+                    total_entry.configure(state = "readonly")
+
+                except ValueError:
+                    # Handle the case where the entered value is not an integer
+                    print("Invalid quantity. Please enter a valid integer.")
+            else:
+                messagebox.showerror('Error', "Not enough stock!")
+
+    def on_paid_entry_return_pressed(self, event):
+        try:
+            # Get the value entered by the user in the paid entry box
+            paid_amount = float(self.paid.get())
+
+            # Get the current total sum from the sum entry
+            total_sum = float(self.sum_entry.get())
+
+            # Calculate the due amount
+            due_amount = total_sum - paid_amount
+
+            # Update the due entry with the calculated due amount
+            self.due.configure(state = "normal")
+            self.due.delete(0, 'end')
+            self.due.insert(0, due_amount)
+            self.due.configure(state = "readonly")
+
+
+        except ValueError:
+            # Handle the case where the entered value is not a float
+            print("Invalid amount. Please enter a valid number.")
 
     def home(self):
         for widget in self.winfo_children():
@@ -56,7 +111,7 @@ class App(customtkinter.CTk):
         self.scrollable_frame = customtkinter.CTkScrollableFrame(self, width=800, height=600)
         self.scrollable_frame.place(x = 200, y = 100)
 
-        self.create_invoice = customtkinter.CTkButton(self, text="Create Invoice")
+        self.create_invoice = customtkinter.CTkButton(self, text="Create Invoice", command=self.get_added_entries_data)
         self.create_invoice.place(x=200, y=750)
 
         self.idsPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center')
@@ -108,6 +163,33 @@ class App(customtkinter.CTk):
         self.prices.configure(state = "readonly")
         self.prices.grid(row=0, column=2, padx = (10, 0),  pady = (10, 10))
 
+        customers = database.fetch_customer_ids()
+        value = []
+        for i in customers:
+            i = str(i)
+            i = i[1:len(i)-1]
+            i = i.replace("'", '')
+            i = i.replace(",", ' -')
+            value.append(i)
+        self.customerSelected = customtkinter.CTkComboBox(self, values=value, state="readonly", width=130)
+        self.customerSelected.set("Customer")
+        self.customerSelected.place(x=350, y=750)
+
+        self.paid = customtkinter.CTkEntry(self, placeholder_text="Paid", width=130)
+        self.paid.place(x=490, y=750)
+        self.paid.bind('<Return>', self.on_paid_entry_return_pressed)
+
+        self.due = customtkinter.CTkEntry(self, state="readonly", placeholder_text="Due", width=130)
+        self.due.place(x=630, y=750)
+
+        self.orderStatus = customtkinter.CTkComboBox(self, values=["Approved", "Waiting approval", "Not approved"], state="readonly", width=130)
+        self.orderStatus.set("Status")
+        self.orderStatus.place(x=770, y=750)
+
+        self.payment = customtkinter.CTkComboBox(self, values=["Cash", "Debit/Credit", "E-money"], state="readonly", width=130)
+        self.payment.set("Payment Type")
+        self.payment.place(x=910, y=750)
+
         amount = database.count_product()
 
         products = database.fetch_products()
@@ -140,24 +222,111 @@ class App(customtkinter.CTk):
             self.plus_buttons.append(plus_button)
 
         self.entries_in_scrollable_frame = []
-        
+        self.ids_in_frame = []
+        self.deletes_in_scrollable_frame = []
+
+        self.new_frame = customtkinter.CTkFrame(self, width=120, height= 70,corner_radius=8)
+        self.new_frame.place(x = 200, y = 650)
+
+        self.sum_entry = customtkinter.CTkEntry(self.new_frame, justify='center', state='readonly')
+        self.sum_entry.grid(row=0, column=0, padx=(10, 0), pady=(10, 10))
+
+        self.calculate_sum_button = customtkinter.CTkButton(self.new_frame, text='Calculate Sum', command=self.calculate_sum)
+        self.calculate_sum_button.grid(row=0, column=1, padx=10, pady=(10, 10))
+
+    
+
         def get_number(index):
             selected_id = self.idsHome[index].get()
             insert_selected_id(selected_id)
 
-
         def insert_selected_id(selected_id):
-            new_entry = customtkinter.CTkEntry(self.scrollable_frame, justify='center')
-            new_entry.insert(0, selected_id)
-            new_entry.configure(state="readonly")
-            new_entry.grid(row=1+len(self.entries_in_scrollable_frame), column=0, padx=(10, 0), pady=(10, 10))
+            if selected_id not in self.ids_in_frame:
+                new_entry = customtkinter.CTkEntry(self.scrollable_frame, justify='center')
+                new_entry.insert(0, selected_id)
+                new_entry.configure(state="readonly")
+                new_entry.grid(row=1+len(self.entries_in_scrollable_frame), column=0, padx=(10, 0), pady=(10, 10))
+                details = database.fetchPOS(selected_id)
 
-            self.plus = customtkinter.CTkButton(self.scrollable_frame, text="X", width=30)
-            self.plus.grid(row=1+len(self.entries_in_scrollable_frame), column=5, padx=(10,10), pady=10)
+                new_entry_name = customtkinter.CTkEntry(self.scrollable_frame, justify='center')
+                new_entry_name.insert(0, details[0][0])
+                new_entry_name.configure(state="readonly")
+                new_entry_name.grid(row=1+len(self.entries_in_scrollable_frame), column=1, padx=(10, 0), pady=(10, 10))
 
-            # Add the new entry to a list if you need to access it later
-            self.entries_in_scrollable_frame.append(new_entry)
+                new_entry_price = customtkinter.CTkEntry(self.scrollable_frame, justify='center')
+                new_entry_price.insert(0, details[0][1])
+                new_entry_price.configure(state="readonly")
+                new_entry_price.grid(row=1+len(self.entries_in_scrollable_frame), column=2, padx=(10, 0), pady=(10, 10))
 
+                new_entry_total = customtkinter.CTkEntry(self.scrollable_frame, justify='center', state="readonly")
+                new_entry_total.insert(0, 0)
+                new_entry_total.grid(row=1+len(self.entries_in_scrollable_frame), column=4, padx=(10, 0), pady=(10, 10))
+                
+                new_entry_qty = customtkinter.CTkEntry(self.scrollable_frame, justify='center', placeholder_text='Quantity')
+                new_entry_qty.grid(row=1+len(self.entries_in_scrollable_frame), column=3, padx=(10, 0), pady=(10, 10))
+                new_entry_qty.bind('<Return>', lambda event, price_entry=new_entry_price, qty_entry=new_entry_qty, total_entry=new_entry_total: self.on_qty_entry_return_pressed(event, selected_id, price_entry, qty_entry, total_entry))
+
+                
+
+                plus = customtkinter.CTkButton(self.scrollable_frame, text="X", command=lambda entry=[new_entry, new_entry_name, new_entry_price, new_entry_total, new_entry_qty]: self.delete_selected_entry(entry, plus), width=30)
+                plus.grid(row=1+len(self.entries_in_scrollable_frame), column=5, padx=(10,10), pady=10)
+                # Add the new entry to a list if you need to access it later
+                self.ids_in_frame.append(selected_id)
+                self.entries_in_scrollable_frame.append([new_entry, new_entry_name, new_entry_price, new_entry_total, new_entry_qty])
+                
+                self.deletes_in_scrollable_frame.append(plus)
+            else:
+                messagebox.showerror('Error', 'Product already added!')
+
+    def get_added_entries_data(self):
+        if self.entries_in_scrollable_frame:
+            for entry_set in self.entries_in_scrollable_frame:
+                new_entry_total = entry_set[4]
+                if not self.ids_in_frame:
+                    messagebox.showerror('Error', 'No item has been added')
+
+                elif not self.ids_in_frame:
+                    messagebox.showerror('Error', 'No item has been added')
+
+                elif not entry_set[4].get() or entry_set[4].get() == 0:
+                    messagebox.showerror('Error', "Quantity can't be zero")
+
+                elif self.customerSelected.get() == 'Customer' or not self.due.get() or not self.paid.get() or self.orderStatus.get() == 'Status' or self.payment.get() == "Payment Type" or not self.sum_entry.get():
+                    messagebox.showerror('Error', 'Fill in all the entries!')
+                elif self.ids_in_frame and self.customerSelected.get() != 'Customer' and self.due.get() and self.paid.get() and self.orderStatus.get() != 'Status' and entry_set[4].get() and int(entry_set[4].get()) > 0 and self.payment.get() != "Payment Type" and self.sum_entry.get() != 0 and self.sum_entry.get():
+                    added_entries_data = []
+                    # Assuming new_entry is a Tkinter Entry widget
+                    new_entry_value = self.customerSelected.get()
+
+                    # Split the string based on ' -'
+                    custId = new_entry_value.split(' -')[0]
+
+                    added_entries_data.append(custId) 
+
+                    for entry_set in self.entries_in_scrollable_frame:
+                        new_entry = entry_set[0]
+                        new_entry_qty = entry_set[3]
+                        new_entry_total = entry_set[4]
+                        
+                        entry_data = [new_entry.get(), new_entry_total.get(), new_entry_qty.get(), self.orderStatus.get(), self.paid.get(), self.due.get(), self.payment.get(), self.sum_entry.get()]
+                        added_entries_data.append(entry_data)
+
+                    print(added_entries_data)
+        else:
+            messagebox.showerror('Error', 'No item has been added')
+
+    def delete_selected_entry(self, entry_to_delete, button_to_delete):
+        # Remove the entry from the GUI
+        for i in entry_to_delete:
+            i.grid_forget()
+        button_to_delete.grid_forget()
+        id = entry_to_delete[0].get()
+
+        self.ids_in_frame.remove(id)
+        # Remove the entry from the list
+        self.entries_in_scrollable_frame.remove(entry_to_delete)
+        self.deletes_in_scrollable_frame.remove(button_to_delete)
+        
 
 
 
