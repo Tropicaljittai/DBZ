@@ -39,7 +39,6 @@ def create_table():
             Size TEXT,
             Stock INTEGER,
             AdditionalPrice REAL,
-            Description TEXT,
             FOREIGN KEY (ProductId) REFERENCES Products(ProductId));
     ''')
 
@@ -86,11 +85,10 @@ def fetch_products():
     connect.close()
     return Products
 
-
 def insert_product(id, ProductName, ProductStock, ShippedStock, RecievedStock, OnHandStock, Description, SupplierId, Price, Cost):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
-    cursor.execute('INSERT INTO Products (id, ProductName, ProductStock, ShippedStock, RecievedStock, OnHandStock, Description, SupplierId, Price, Cost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (id, ProductName, ProductStock, ShippedStock, RecievedStock, OnHandStock, Description, SupplierId, Price))
+    cursor.execute('INSERT INTO Products (id, ProductName, ProductStock, ShippedStock, RecievedStock, OnHandStock, Description, SupplierId, Price, Cost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (id, ProductName, ProductStock, ShippedStock, RecievedStock, OnHandStock, Description, SupplierId, Price, Cost))
     connect.commit()
     connect.close()
 

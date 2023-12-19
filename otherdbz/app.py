@@ -40,6 +40,8 @@ class App(customtkinter.CTk):
         self.sidebar_button_5.grid(row=5, column=0, padx=20, pady=10)
         self.sidebar_button_6 = customtkinter.CTkButton(self.sidebar_frame, text="Sales")
         self.sidebar_button_6.grid(row=6, column=0, padx=20, pady=10)
+        self.sidebar_button_6 = customtkinter.CTkButton(self.sidebar_frame, text="Sales")
+        self.sidebar_button_6.grid(row=7, column=0, padx=20, pady=10)
     def calculate_sum(self):
         # Calculate the sum of all total entry box values
         total_sum = sum(float(entry_set[3].get()) for entry_set in self.entries_in_scrollable_frame)
@@ -342,11 +344,13 @@ class App(customtkinter.CTk):
         custom_font=("Arial",30)
 
 
+        frame = customtkinter.CTkFrame(self, width= 400, height = 510)
+        frame.place(x= 200, y=100)
+        
         self.label = customtkinter.CTkLabel(self, font=custom_font, text="Product Details", text_color="White")
         self.label.place(x=200, y= 30)
 
-        frame = customtkinter.CTkFrame(self, width= 400, height = 470)
-        frame.place(x= 200, y=100)
+        
 
         self.name = customtkinter.CTkEntry(self, placeholder_text="Name")
         self.name.place(x=240, y= 160)
@@ -430,16 +434,16 @@ class App(customtkinter.CTk):
         self.tree['columns'] = ('ID', 'Name', 'Total Stock', 'Shipped', 'Recieved', 'On Hand', 'Description', 'Supplier', 'Price', 'Cost')
 
         self.tree.column('#0', width=0, stretch=tk.NO)
-        self.tree.column('ID', anchor=tk.CENTER, width=170)
-        self.tree.column('Name', anchor=tk.CENTER, width=170)
-        self.tree.column('Total Stock', anchor=tk.CENTER, width=170)
-        self.tree.column('Shipped', anchor=tk.CENTER, width=170)
-        self.tree.column('Recieved', anchor=tk.CENTER, width=170)
-        self.tree.column('On Hand', anchor=tk.CENTER, width=170)
-        self.tree.column('Description', anchor=tk.CENTER, width=170)
-        self.tree.column('Supplier', anchor=tk.CENTER, width=170)
-        self.tree.column('Price', anchor=tk.CENTER, width=170)
-        self.tree.column('Cost', anchor=tk.CENTER, width=170)
+        self.tree.column('ID', anchor=tk.CENTER, width=130)
+        self.tree.column('Name', anchor=tk.CENTER, width=130)
+        self.tree.column('Total Stock', anchor=tk.CENTER, width=130)
+        self.tree.column('Shipped', anchor=tk.CENTER, width=130)
+        self.tree.column('Recieved', anchor=tk.CENTER, width=130)
+        self.tree.column('On Hand', anchor=tk.CENTER, width=130)
+        self.tree.column('Description', anchor=tk.CENTER, width=130)
+        self.tree.column('Supplier', anchor=tk.CENTER, width=130)
+        self.tree.column('Price', anchor=tk.CENTER, width=130)
+        self.tree.column('Cost', anchor=tk.CENTER, width=130)
 
         self.tree.heading('ID', text="Id")
         self.tree.heading('Name', text="Name")
@@ -450,7 +454,7 @@ class App(customtkinter.CTk):
         self.tree.heading('Description', text='Description')
         self.tree.heading('Supplier', text="Supplier")
         self.tree.heading('Price', text="Price (Rp)")
-        self.tree.heading('Cost', text='Cost')
+        self.tree.heading('Cost', text='Cost (Rp)')
 
 
         self.tree.place(x = 1000, y = 150)
@@ -465,12 +469,14 @@ class App(customtkinter.CTk):
             self.clear()
             self.id.insert(0, row[0])
             self.name.insert(0, row[1])
-            self.label.insert(0, row[2])
-            self.status.set(row[3])
-            self.stock.insert(0, row[4])
-            self.outgoingStock.insert(0, row[5])
-            self.supplier_product.set(row[6])           
-            self.price.insert(0, row[7])
+            self.stock.insert(0, row[2])
+            self.shipped.insert(0, row[3])
+            self.recieved.insert(0, row[4])
+            self.on_hand.insert(0, row[5])
+            self.description.insert(0, row[6])           
+            self.supplier_product.set(row[7])
+            self.price.insert(0, row[8])
+            self.cost.insert(0, row[9])
         else:
             pass
 
@@ -488,18 +494,27 @@ class App(customtkinter.CTk):
 
     def update(self):
         selected_item = self.tree.focus()
+        stock_entry = self.stock.get()
+        shipped_entry = self.shipped.get()
+        recieved_stock = self.recieved.get()
+        onhand_stock = self.on_hand.get()
+        comparison = int(shipped_entry)+int(recieved_stock)+int(onhand_stock)
         if not selected_item:
             messagebox.showerror('Error', 'Choose a product to update')
+        elif int(comparison) != int(stock_entry):
+            messagebox.showerror('Error', 'Stocks entries total does not equal total stock amount!')
         else:
             id_entry = self.id.get()
             name_entry = self.name.get()
-            label_entry = self.label.get()
-            status_entry = self.status.get()
             stock_entry = self.stock.get()
-            outgoing_stock_entry = self.outgoingStock.get()
+            shipped_entry = self.shipped.get()
+            recieved_stock = self.recieved.get()
+            onhand_stock = self.on_hand.get()
+            description_stock = self.description.get()
             supplier_entry = self.supplier_product.get()
             price_entry = self.price.get()
-            database.update_products(id_entry, name_entry, label_entry, status_entry, stock_entry, outgoing_stock_entry, supplier_entry, price_entry)
+            cost_entry = self.cost.get()
+            database.update_products(id_entry, name_entry, stock_entry, shipped_entry, recieved_stock, onhand_stock, description_stock, supplier_entry, price_entry, cost_entry)
             self.add_to_treeview()
             self.clear()
             # self.create_chart()
@@ -508,20 +523,25 @@ class App(customtkinter.CTk):
     def insert(self):
         id_entry = self.id.get()
         name_entry = self.name.get()
-        label_entry = self.label.get()
-        status_entry = self.status.get()
         stock_entry = self.stock.get()
-        outgoing_stock_entry = self.outgoingStock.get()
+        shipped_entry = self.shipped.get()
+        recieved_stock = self.recieved.get()
+        onhand_stock = self.on_hand.get()
+        description_stock = self.description.get()
         supplier_entry = self.supplier_product.get()
         price_entry = self.price.get()
-        if not (id_entry and name_entry and label_entry and status_entry and stock_entry and outgoing_stock_entry and supplier_entry and price_entry):
+        cost_entry = self.cost.get()
+        comparison = int(shipped_entry)+int(recieved_stock)+int(onhand_stock)
+        if not (id_entry and name_entry and stock_entry and shipped_entry and recieved_stock and onhand_stock and supplier_entry and price_entry and description_stock and cost_entry):
             messagebox.showerror('Error', 'Enter all fields.')
+        elif int(comparison) != int(stock_entry):
+            messagebox.showerror('Error', 'Stocks entries total does not equal total stock amount!')
         elif database.id_exists(id_entry):
             messagebox.showerror('Error', "Id already exists.")
         else:
             try:
                 stock_value = int(stock_entry)
-                database.insert_product(id_entry, name_entry, label_entry, status_entry, stock_entry, outgoing_stock_entry, supplier_entry, price_entry)
+                database.insert_product(id_entry, name_entry, stock_entry, shipped_entry, recieved_stock, onhand_stock, description_stock, supplier_entry, price_entry, cost_entry)
                 self.add_to_treeview()
                 self.clear()
                 # create_chart()
@@ -537,16 +557,21 @@ class App(customtkinter.CTk):
         self.id.configure(placeholder_text = "Id")
         self.name.delete(0,END)
         self.name.configure(placeholder_text = "Name")
-        self.label.delete(0,END)
-        self.label.configure(placeholder_text = "Label")
-        self.status.set("Status")
         self.stock.delete(0,END)
         self.stock.configure(placeholder_text = "Stock/Quantity")
-        self.outgoingStock.delete(0,END)
-        self.outgoingStock.configure(placeholder_text = "Outgoing Stock")
+        self.shipped.delete(0,END)
+        self.description.delete(0,END)
+        self.description.configure(placeholder_text = "Description")
+        self.shipped.configure(placeholder_text = "Shipped")
+        self.recieved.delete(0,END)
+        self.recieved.configure(placeholder_text = "Recieved")
+        self.on_hand.delete(0,END)
+        self.on_hand.configure(placeholder_text = "On Hand")
         self.supplier_product.set("Supplier")
         self.price.delete(0,END)
         self.price.configure(placeholder_text = "Price")
+        self.cost.delete(0,END)
+        self.cost.configure(placeholder_text = "Cost")
 
     def add_to_treeview(self):
         products = database.fetch_products()
@@ -600,16 +625,16 @@ class App(customtkinter.CTk):
         self.accHolderSupplier.place(x=240, y= 400)
 
         self.add_button = customtkinter.CTkButton(self, command=self.insert_supplier, text="Add")
-        self.add_button.place(x=240, y=440)
+        self.add_button.place(x=240, y=470)
 
         self.update_button = customtkinter.CTkButton(self, command=self.update_supplier, text="Update")
-        self.update_button.place(x=410, y=440)
+        self.update_button.place(x=410, y=470)
 
         self.delete_button = customtkinter.CTkButton(self, command=self.delete_supplier, text="Delete")
-        self.delete_button.place(x=240, y=480)
+        self.delete_button.place(x=240, y=510)
 
         self.clearbutton = customtkinter.CTkButton(self, command=lambda:self.clear_supplier(True), text="Clear")
-        self.clearbutton.place(x=410, y=480)
+        self.clearbutton.place(x=410, y=510)
 
         self.tabview = customtkinter.CTkTabview(self, width=250)
 
