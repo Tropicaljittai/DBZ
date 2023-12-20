@@ -6,6 +6,7 @@ from PIL import Image
 from tkinter import messagebox
 import database
 from tkinter import END
+from datetime import datetime
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -34,7 +35,7 @@ class App(customtkinter.CTk):
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
         self.sidebar_button_3 = customtkinter.CTkButton(self.sidebar_frame, text="Customers", command=self.customer)
         self.sidebar_button_3.grid(row=3, column=0, padx=20, pady=10)
-        self.sidebar_button_4 = customtkinter.CTkButton(self.sidebar_frame, text="Orders")
+        self.sidebar_button_4 = customtkinter.CTkButton(self.sidebar_frame, text="Orders",command=self.orders)
         self.sidebar_button_4.grid(row=4, column=0, padx=20, pady=10)
         self.sidebar_button_5 = customtkinter.CTkButton(self.sidebar_frame, text="Products", command=self.products)
         self.sidebar_button_5.grid(row=5, column=0, padx=20, pady=10)
@@ -77,27 +78,7 @@ class App(customtkinter.CTk):
             else:
                 messagebox.showerror('Error', "Not enough stock!")
 
-    def on_paid_entry_return_pressed(self, event):
-        try:
-            # Get the value entered by the user in the paid entry box
-            paid_amount = float(self.paid.get())
 
-            # Get the current total sum from the sum entry
-            total_sum = float(self.sum_entry.get())
-
-            # Calculate the due amount
-            due_amount = total_sum - paid_amount
-
-            # Update the due entry with the calculated due amount
-            self.due.configure(state = "normal")
-            self.due.delete(0, 'end')
-            self.due.insert(0, due_amount)
-            self.due.configure(state = "readonly")
-
-
-        except ValueError:
-            # Handle the case where the entered value is not a float
-            print("Invalid amount. Please enter a valid number.")
 
     def home(self):
         for widget in self.winfo_children():
@@ -108,9 +89,8 @@ class App(customtkinter.CTk):
         self.scrollable_frame = customtkinter.CTkScrollableFrame(self, width=800, height=600)
         self.scrollable_frame.place(x = 200, y = 100)
 
-        self.create_invoice = customtkinter.CTkButton(self, text="Create Invoice", command=self.get_added_entries_data)
-        self.create_invoice.place(x=200, y=750)
 
+        
         self.idsPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center')
         self.idsPOS.insert(0, "Product Id")
         self.idsPOS.configure(state = "readonly")
@@ -156,7 +136,7 @@ class App(customtkinter.CTk):
         self.names.grid(row=0, column=1, padx = (10, 0),  pady = (10, 10))
 
         self.prices = customtkinter.CTkEntry(self.midframe, justify = 'center')
-        self.prices.insert(0, "Price")
+        self.prices.insert(0, "Supplier")
         self.prices.configure(state = "readonly")
         self.prices.grid(row=0, column=2, padx = (10, 0),  pady = (10, 10))
 
@@ -172,17 +152,7 @@ class App(customtkinter.CTk):
         self.customerSelected.set("Customer")
         self.customerSelected.place(x=350, y=750)
 
-        self.paid = customtkinter.CTkEntry(self, placeholder_text="Paid", width=130)
-        self.paid.place(x=490, y=750)
-        self.paid.bind('<Return>', self.on_paid_entry_return_pressed)
-
-        self.due = customtkinter.CTkEntry(self, state="readonly", placeholder_text="Due", width=130)
-        self.due.place(x=630, y=750)
-
-        self.orderStatus = customtkinter.CTkComboBox(self, values=["Approved", "Waiting approval", "Not approved"], state="readonly", width=130)
-        self.orderStatus.set("Status")
-        self.orderStatus.place(x=770, y=750)
-
+       
         self.payment = customtkinter.CTkComboBox(self, values=["Cash", "Debit/Credit", "E-money"], state="readonly", width=130)
         self.payment.set("Payment Type")
         self.payment.place(x=910, y=750)
@@ -275,42 +245,63 @@ class App(customtkinter.CTk):
             else:
                 messagebox.showerror('Error', 'Product already added!')
 
-    def get_added_entries_data(self):
-        if self.entries_in_scrollable_frame:
-            for entry_set in self.entries_in_scrollable_frame:
-                new_entry_total = entry_set[4]
-                if not self.ids_in_frame:
-                    messagebox.showerror('Error', 'No item has been added')
+        self.create_invoice = customtkinter.CTkButton(self, text="Create Invoice", command=self.create_and_insert_order)
+        self.create_invoice.place(x=200, y=750)
 
-                elif not self.ids_in_frame:
-                    messagebox.showerror('Error', 'No item has been added')
+    def calculate_total_qty(self):
+        total_qty = 0
+        for entry_set in self.entries_in_scrollable_frame:
+            try:
+                qty = int(entry_set[4].get())  # Assuming qty is at index 4
+                total_qty += qty
+            except ValueError:
+                # Handle the case where the entry is not a valid integer
+                print("Invalid quantity in one of the rows.")
+        return total_qty
+        
+       
+            
+                
+        
 
-                elif not entry_set[4].get() or entry_set[4].get() == 0:
-                    messagebox.showerror('Error', "Quantity can't be zero")
 
-                elif self.customerSelected.get() == 'Customer' or not self.due.get() or not self.paid.get() or self.orderStatus.get() == 'Status' or self.payment.get() == "Payment Type" or not self.sum_entry.get():
-                    messagebox.showerror('Error', 'Fill in all the entries!')
-                elif self.ids_in_frame and self.customerSelected.get() != 'Customer' and self.due.get() and self.paid.get() and self.orderStatus.get() != 'Status' and entry_set[4].get() and int(entry_set[4].get()) > 0 and self.payment.get() != "Payment Type" and self.sum_entry.get() != 0 and self.sum_entry.get():
-                    added_entries_data = []
-                    # Assuming new_entry is a Tkinter Entry widget
-                    new_entry_value = self.customerSelected.get()
-
-                    # Split the string based on ' -'
-                    custId = new_entry_value.split(' -')[0]
-
-                    added_entries_data.append(custId) 
-
-                    for entry_set in self.entries_in_scrollable_frame:
-                        new_entry = entry_set[0]
-                        new_entry_qty = entry_set[3]
-                        new_entry_total = entry_set[4]
-                        
-                        entry_data = [new_entry.get(), new_entry_total.get(), new_entry_qty.get(), self.orderStatus.get(), self.paid.get(), self.due.get(), self.payment.get(), self.sum_entry.get()]
-                        added_entries_data.append(entry_data)
-
-                    print(added_entries_data)
-        else:
+    def create_and_insert_order(self):
+    # Check if there are entries to process
+        if not self.entries_in_scrollable_frame:
             messagebox.showerror('Error', 'No item has been added')
+            return
+
+        # Validate entries
+        if self.customerSelected.get() == 'Customer' or self.payment.get() == "Payment Type" or not self.sum_entry.get():
+            messagebox.showerror('Error', 'Fill in all the entries!')
+            return
+
+        # Gather data for the order
+        try:
+            total_quantity = self.calculate_total_qty()
+            order_total = float(self.sum_entry.get())
+            payment_type = self.payment.get()
+            customer_id = self.customerSelected.get().split(' -')[0]  # Assuming the ID is before ' -'
+            payment_status = 0
+            shipment_status = 'Pending'
+            current_datetime = datetime.now()
+            order_date = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+            # Insert the order and get the OrderId
+            order_id = database.insert_orders(total_quantity, payment_status, shipment_status, order_date, order_total, payment_type, customer_id)
+
+            # Gather and insert each order detail
+            for entry_set in self.entries_in_scrollable_frame:
+                product_id = entry_set[0].get()  # Product ID
+                quantity = int(entry_set[3].get())  # Quantity
+                if quantity <= 0:
+                    raise ValueError("Quantity can't be zero or negative")
+                database.insert_details(order_id,product_id, quantity)
+
+            messagebox.showinfo('Success', 'Order Created Successfully')
+            self.orders()
+        except Exception as e:
+            messagebox.showerror('Error', f'An error occurred: {e}')
 
     def delete_selected_entry(self, entry_to_delete, button_to_delete):
         # Remove the entry from the GUI
@@ -326,6 +317,150 @@ class App(customtkinter.CTk):
         
 
 
+    def orders(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        self.sidebar()
+        
+        # self.l = customtkinter.CTkLabel(self, font=custom_font, text="Customer Details", text_color="White")
+        # self.label.place(x=200, y= 30)
+
+        # self.title = customtkinter.CTkLabel(self, font=("Arial Rounded MT Bold",25),text="Orders", text_color="#4477F9")
+        # self.title.place(x= 210,y=55)
+        # self.detail = customtkinter.CTkLabel(self, font=("Arial Rounded MT Bold",25),text="Details", text_color="#4477F9")
+        # self.detail.place(x= 1060,y=55)
+
+        self.scrollable_frame = customtkinter.CTkScrollableFrame(self, width=820, height=600)
+        self.scrollable_frame.place(x = 200, y = 100)
+        self.entries_in_scrollable_frame = []
+
+        
+    
+
+        self.orderIdPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+        self.orderIdPOS.insert(0, "Order Id")
+        self.orderIdPOS.configure(state = "readonly")
+        self.orderIdPOS.grid(row=0, column=0, padx = (5, 0), pady = (10, 10))
+
+        self.customerIdPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+        self.customerIdPOS.insert(0, "Customer Name")
+        self.customerIdPOS.configure(state = "readonly")
+        self.customerIdPOS.grid(row=0, column=1, padx = (5, 0),  pady = (10, 10))
+
+        self.addressPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+        self.addressPOS.insert(0, "Address")
+        self.addressPOS.configure(state = "readonly")
+        self.addressPOS.grid(row=0, column=2, padx = (5, 0),  pady = (10, 10))
+
+        self.totPricePOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+        self.totPricePOS.insert(0, "Payment Status")
+        self.totPricePOS.configure(state = "readonly")
+        self.totPricePOS.grid(row=0, column=3, padx = (5, 0),  pady = (10, 10))
+
+        self.payStatPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+        self.payStatPOS.insert(0, "Shipping Status")
+        self.payStatPOS.configure(state = "readonly")
+        self.payStatPOS.grid(row=0, column=4, padx = (5, 0),  pady = (10, 10))
+
+        self.shipStatPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+        self.shipStatPOS.insert(0, "Order Date")
+        self.shipStatPOS.configure(state = "readonly")
+        self.shipStatPOS.grid(row=0, column=5, padx = (5, 0),  pady = (10, 10))
+
+        
+
+
+        view = customtkinter.CTkButton(self.scrollable_frame, text="view")
+        view.grid(row=1+len(self.entries_in_scrollable_frame), column=5, padx=(5,10), pady=10)
+
+        # self.datePOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+        # self.datePOS.insert(0, "Order Date")
+        # self.datePOS.configure(state = "readonly")
+        # self.datePOS.grid(row=0, column=5, padx = (5, 0),  pady = (10, 10))
+
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure((1, 2), weight=1)
+        self.grid_rowconfigure((0, 1, 2), weight=1)
+        
+        self.midframe = customtkinter.CTkScrollableFrame(self, width=435, height = 400, corner_radius=10)
+        self.midframe.grid(row=0, column=0, rowspan=4, sticky="nsew")
+        self.midframe.grid_rowconfigure(8, weight=1)
+        self.midframe.place(x = 1050, y=100)
+
+        self.productId = customtkinter.CTkEntry(self.midframe, justify = 'center',width=100)
+        self.productId.insert(0, "Product Id")
+        self.productId.configure(state = "readonly")
+        self.productId.grid(row=0, column=0, padx = (7, 0), pady = (10, 10))
+
+        self.productNames = customtkinter.CTkEntry(self.midframe, justify = 'center',width=100)
+        self.productNames.insert(0, "Name")
+        self.productNames.configure(state = "readonly")
+        self.productNames.grid(row=0, column=1, padx = (7, 0),  pady = (10, 10))
+
+        self.qty = customtkinter.CTkEntry(self.midframe, justify = 'center',width=100)
+        self.qty .insert(0, "Quantity")
+        self.qty .configure(state = "readonly")
+        self.qty .grid(row=0, column=2, padx = (7, 0),  pady = (10, 10))
+
+        self.prices = customtkinter.CTkEntry(self.midframe, justify = 'center',width=100)
+        self.prices.insert(0, "Price")
+        self.prices.configure(state = "readonly")
+        self.prices.grid(row=0, column=3, padx = (7, 0),  pady = (10, 10))
+
+        amount = database.count_orders()
+        orders = database.fetch_orders()
+    
+
+        self.idsHome = []
+        for i in range(amount[0]):
+            self.Identry = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+            self.Identry.insert(0, orders[i][0])
+            self.Identry.configure(state = "readonly")
+            self.Identry.grid(row=1+i, column=0, padx = (5, 0),  pady = (10, 10))
+            self.idsHome.append(self.Identry)
+
+        for i in range(amount[0]):
+            customerName = database.get_customer_name_by_id(orders[i][7])
+            self.entry = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+            self.entry.insert(0,str(customerName))
+            self.entry.configure(state = "readonly")
+            self.entry.grid(row=1+i, column=1, padx = (5, 0),  pady = (10, 10))
+
+        for i in range(amount[0]):
+            address = database.fetch_customer_address(orders[i][7])
+            self.entry = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
+            self.entry.insert(0,str(address))
+            self.entry.configure(state = "readonly")
+            self.entry.grid(row=1+i, column=2, padx = (5, 0),  pady = (10, 10))
+
+        self.plus_buttons = []
+
+        self.entries_in_scrollable_frame = []
+        self.ids_in_frame = []
+        self.deletes_in_scrollable_frame = []
+
+        self.idsProduct = []
+        for i in range(amount[0]):
+            self.Identry = customtkinter.CTkEntry(self.midframe, justify = 'center',width=110)
+            self.Identry.insert(0, orders[i][0])
+            self.Identry.configure(state = "readonly")
+            self.Identry.grid(row=1+i, column=0, padx = (5, 0),  pady = (10, 10))
+            self.idsProduct.append(self.Identry)
+
+        for i in range(amount[0]):
+            self.entry = customtkinter.CTkEntry(self.midframe, justify = 'center',width=110)
+            self.entry.insert(0, orders[i][7])
+            self.entry.configure(state = "readonly")
+            self.entry.grid(row=1+i, column=1, padx = (5, 0),  pady = (10, 10))
+
+        for i in range(amount[0]):
+            self.entry = customtkinter.CTkEntry(self.midframe, justify = 'center',width=110)
+            self.entry.insert(0, orders[i][7])
+            self.entry.configure(state = "readonly")
+            self.entry.grid(row=1+i, column=2, padx = (5, 0),  pady = (10, 10))
+
+       
 
 
 
@@ -997,5 +1132,5 @@ class App(customtkinter.CTk):
 
 if __name__ == "__main__":
     app = App()
-    app.home()
+    app.orders()
     app.mainloop()

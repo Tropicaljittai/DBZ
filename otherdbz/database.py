@@ -182,19 +182,17 @@ def create_orders():
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS Orders (
-            OrderId TEXT PRIMARY KEY,  
-            OrderQuantity INTEGER,
-            OrderStatus TEXT,
+            OrderId INTEGER PRIMARY KEY AUTOINCREMENT,  
+            ItemQuantity INTEGER,
+            PaymentStatus TEXT,
+            ShipmentStatus TEXT,
             OrderDate TEXT,
             OrderTotal INTEGER,
-            InvoiceNum INTEGER,
             PaymentType TEXT,
-            Pay INTEGER,
-            Due INTEGER,
             CustomerId TEXT,
             FOREIGN KEY (CustomerId) REFERENCES Customer(id))''')
-    connect.commit
-    connect.close
+    connect.commit()
+    connect.close()
 
 def fetch_orders():
     connect = sqlite3.connect('Data.db')
@@ -204,31 +202,42 @@ def fetch_orders():
     connect.close()
     return Products
 
-def insert_orders(id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId):
-    connect = sqlite3.connect('Data.db')
-    cursor = connect.cursor()
-    cursor.execute('INSERT INTO Orders (id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (id, OrderQuantity, OrderStatus, OrderDate, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId))
-    connect.commit()
-    connect.close()
+def insert_orders(ItemQuantity, PaymentStatus, ShipmentStatus, OrderDate, OrderTotal, PaymentType, CustomerId):
+    try:
+        connect = sqlite3.connect('Data.db')
+        cursor = connect.cursor()
+
+        cursor.execute('INSERT INTO Orders (ItemQuantity, PaymentStatus, ShipmentStatus, OrderDate, OrderTotal, PaymentType, CustomerId) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+                       (ItemQuantity, PaymentStatus, ShipmentStatus, OrderDate, OrderTotal, PaymentType, CustomerId))
+        
+        order_id = cursor.lastrowid  # Get the last inserted id
+        connect.commit()
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None
+    finally:
+        connect.close()
+
+    return order_id
 
 def delete_orders(id):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
-    cursor.execute('DELETE FROM Orders WHERE id = ?', (id,))
+    cursor.execute('DELETE FROM Orders WHERE OrderId = ?', (id))
     connect.commit()
     connect.close()
 
-def update_orders(id, OrderQuantity, OrderStatus, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId):
+def update_orderStatus(orderId, PaymentStatus,ShipmentStatus):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
-    cursor.execute("UPDATE Orders SET OrderQuantity = ?, OrderStatus = ?, OrderTotal = ?, InvoiceNum = ?, PaymentType = ?, Pay = ?, Due = ?, CustomerId = ? WHERE OrderId = ?", ( OrderQuantity, OrderStatus, OrderTotal, InvoiceNum, PaymentType, Pay, Due, CustomerId, id))
+    cursor.execute("UPDATE Orders SET PaymentStatus = ?, ShipmentStatus = ?, WHERE OrderId = ?", (orderId, PaymentStatus, ShipmentStatus))
     connect.commit()
     connect.close()
 
 def id_exists_order(id):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
-    cursor.execute('SELECT COUNT(*) FROM Orders WHERE id = ?', (id,))
+    cursor.execute('SELECT COUNT(*) FROM Orders WHERE OrderId = ?', (id))
     result = cursor.fetchone()
     connect.close()
     return result[0] > 0
@@ -266,6 +275,51 @@ def fetch_customer_ids():
     connect.close()
     return Products
 
+def get_customer_name_by_id(customer_id):
+    # Connect to the SQLite database
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+
+    try:
+        # SQL query to fetch the customer's name based on the ID
+        cursor.execute('SELECT name FROM Customer WHERE id = ?', (customer_id,))
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]  # Return the customer's name
+        else:
+            return None  # No customer found for the given ID
+
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+
+    finally:
+        # Close the database connection
+        connect.close()
+
+def fetch_customer_address(customer_id):
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+
+    try:
+        # SQL query to fetch the customer's name based on the ID
+        cursor.execute('SELECT address FROM Customer WHERE id = ?', (customer_id,))
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]  # Return the customer's name
+        else:
+            return None  # No customer found for the given ID
+
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+
+    finally:
+        # Close the database connection
+        connect.close()
+
 
 def insert_Customer(id, name, email, phone, address, bankName, accNum, account_holder):
     connect = sqlite3.connect('Data.db')
@@ -301,16 +355,32 @@ def create_details():
     cursor = connect.cursor()
 
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS OrderDetails (
-            OrderId TEXT PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS OrderDetails(
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            OrderId INTEGER,
             ProductId TEXT,
             Quantity INTEGER,
-            TotalCost INTEGER,
             FOREIGN KEY (OrderId) REFERENCES Orders(OrderId)
             FOREIGN KEY (ProductId) REFERENCES Products(id))''')
     connect.commit
     connect.close
- 
+
+def count_orders():
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+    cursor.execute('SELECT COUNT(*) FROM Orders')
+    Orders = cursor.fetchone()
+    connect.close()
+    return Orders
+def count_details():
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+    cursor.execute('SELECT COUNT(*) FROM OrderDetails')
+    Orders = cursor.fetchone()
+    connect.close()
+    return Orders
+
+
 def fetch_details():
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
@@ -320,27 +390,26 @@ def fetch_details():
     return Products
 
 
-
-def insert_details(OrderId, ProductId, Quantity, TotalCost):
+def insert_details(OrderId, ProductId, Quantity):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
-    cursor.execute('INSERT INTO OrderDetails (OrderId, ProductId, Quantity, TotalCost) VALUES (?, ?, ?, ?)', (OrderId, ProductId, Quantity, TotalCost))
+    cursor.execute('INSERT INTO OrderDetails (OrderId, ProductId, Quantity) VALUES (?, ?, ?)', (OrderId, ProductId, Quantity))
     connect.commit()
     connect.close()
 
 def delete_details(id):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
-    cursor.execute('DELETE FROM OrderDetails WHERE OrderId = ?', (id,))
+    cursor.execute('DELETE FROM OrderDetails WHERE Id = ?', (id,))
     connect.commit()
     connect.close()
 
-def update_details(OrderId, ProductId, Quantity, TotalCost):
-    connect = sqlite3.connect('Data.db')
-    cursor = connect.cursor()
-    cursor.execute("UPDATE OrderDetails SET Quantity = ?, TotalCost = ? WHERE id = ? AND ProductId = ?", ( Quantity, TotalCost, OrderId, ProductId))
-    connect.commit()
-    connect.close()
+# def update_details(OrderId, ProductId, Quantity):
+#     connect = sqlite3.connect('Data.db')
+#     cursor = connect.cursor()
+#     cursor.execute("UPDATE OrderDetails SET Quantity = ?, TotalCost = ? WHERE id = ? AND ProductId = ?", ( Quantity, TotalCost, OrderId, ProductId))
+#     connect.commit()
+#     connect.close()
 
 def id_exists_details(id):
     connect = sqlite3.connect('Data.db')
