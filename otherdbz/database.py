@@ -247,6 +247,21 @@ def fetch_orders():
     connect.close()
     return Products
 
+def get_highest_order_id():
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(OrderId) FROM Orders")
+    
+    highest_product_id = cursor.fetchone()[0]
+
+    if highest_product_id is None:
+        connection.close()
+        return 0
+    
+    connection.close()
+    return int(highest_product_id)
+
 def insert_orders(ItemQuantity, PaymentStatus, ShipmentStatus, OrderDate, OrderTotal, PaymentType, CustomerId):
     try:
         connect = sqlite3.connect('Data.db')
