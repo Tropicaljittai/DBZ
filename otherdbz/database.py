@@ -275,6 +275,29 @@ def fetch_customer_ids():
     connect.close()
     return Products
 
+def get_isPaid(orderId):
+    # Connect to the SQLite database
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+
+    try:
+        # SQL query to fetch the customer's name based on the ID
+        cursor.execute('SELECT PaymentStatus FROM Orders WHERE id = ?', (orderId,))
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]  # Return the customer's name
+        else:
+            return None  # No customer found for the given ID
+
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+
+    finally:
+        # Close the database connection
+        connect.close()
+
 def get_customer_name_by_id(customer_id):
     # Connect to the SQLite database
     connect = sqlite3.connect('Data.db')
@@ -297,6 +320,30 @@ def get_customer_name_by_id(customer_id):
     finally:
         # Close the database connection
         connect.close()
+def get_shipStat(orderId):
+    # Connect to the SQLite database
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+
+    try:
+        # SQL query to fetch the customer's name based on the ID
+        cursor.execute('SELECT ShipmentStatus FROM orders WHERE id = ?', (orderId,))
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]  # Return the customer's name
+        else:
+            return None  # No customer found for the given ID
+
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+
+    finally:
+        # Close the database connection
+        connect.close()
+
+        
 
 def fetch_customer_address(customer_id):
     connect = sqlite3.connect('Data.db')

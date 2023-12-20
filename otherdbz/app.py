@@ -434,6 +434,27 @@ class App(customtkinter.CTk):
             self.entry.configure(state = "readonly")
             self.entry.grid(row=1+i, column=2, padx = (5, 0),  pady = (10, 10))
 
+        for i in range(amount[0]):
+            
+            box = ['paid','unpaid']
+            current_stat= database.get_isPaid(orders[i][0])
+            if current_stat == 1:
+                currentStatus = "paid"
+            else:
+                currentStatus ="unpaid"
+            self.combo = customtkinter.CTkComboBox(self.scrollable_frame,justify = 'center',width=110,values=box,state="readonly")
+            self.combo.set(currentStatus)
+            self.combo.grid(row=1+i, column=3, padx = (5, 0),  pady = (10, 10))
+        
+        # for i in range(amount[0]):
+        #     box = ['pending','delivered',"cancelled"]
+        #     current_stat= database.get_shipStat(orders[i][0])
+        #     self.combo = customtkinter.CTkComboBox(self.scrollable_frame,justify = 'center',width=110,values=box,state="readonly")
+        #     self.combo.set(current_stat)
+        #     self.combo.grid(row=1+i, column=4, padx = (5, 0),  pady = (10, 10))
+
+
+
         self.plus_buttons = []
 
         self.entries_in_scrollable_frame = []
