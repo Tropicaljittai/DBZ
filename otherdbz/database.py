@@ -45,6 +45,51 @@ def create_table():
     connect.commit()
     connect.close()
 
+def get_highest_product_id():
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(id) FROM Products")
+    
+    highest_product_id = cursor.fetchone()[0]
+
+    if highest_product_id is None:
+        connection.close()
+        return 0
+    
+    connection.close()
+    return highest_product_id
+
+def get_highest_customer_id():
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(id) FROM Customer")
+    
+    highest_product_id = cursor.fetchone()[0]
+
+    if highest_product_id is None:
+        connection.close()
+        return 0
+    
+    connection.close()
+    return int(highest_product_id)
+
+def get_highest_supplier_id():
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(SupplierId) FROM Supplier")
+    
+    highest_product_id = cursor.fetchone()[0]
+
+    if highest_product_id is None:
+        connection.close()
+        return 0
+    
+    connection.close()
+    return int(highest_product_id)
+        
 def fetch_stocks(id):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()

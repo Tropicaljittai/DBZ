@@ -41,8 +41,7 @@ class App(customtkinter.CTk):
         self.sidebar_button_5.grid(row=5, column=0, padx=20, pady=10)
         self.sidebar_button_6 = customtkinter.CTkButton(self.sidebar_frame, text="Sales")
         self.sidebar_button_6.grid(row=6, column=0, padx=20, pady=10)
-        self.sidebar_button_6 = customtkinter.CTkButton(self.sidebar_frame, text="Sales")
-        self.sidebar_button_6.grid(row=7, column=0, padx=20, pady=10)
+
     def calculate_sum(self):
         # Calculate the sum of all total entry box values
         total_sum = sum(float(entry_set[3].get()) for entry_set in self.entries_in_scrollable_frame)
@@ -490,8 +489,10 @@ class App(customtkinter.CTk):
         self.name = customtkinter.CTkEntry(self, placeholder_text="Name")
         self.name.place(x=240, y= 160)
 
-        self.id = customtkinter.CTkEntry(self, placeholder_text="Id")
+        self.id = customtkinter.CTkEntry(self)
         self.id.place(x=410, y= 160)
+        self.id.configure(placeholder_text = "Id")
+        self.id.configure(state="readonly")
 
         self.stock = customtkinter.CTkEntry(self, placeholder_text="Total Stock")
         self.stock.place(x=240, y= 220)
@@ -602,7 +603,9 @@ class App(customtkinter.CTk):
         if selected_item:
             row = self.tree.item(selected_item)['values']
             self.clear()
+            self.id.configure(state="normal")
             self.id.insert(0, row[0])
+            self.id.configure(state="readonly")    
             self.name.insert(0, row[1])
             self.stock.insert(0, row[2])
             self.shipped.insert(0, row[3])
@@ -624,7 +627,6 @@ class App(customtkinter.CTk):
             database.delete_products(id_entry)
             self.add_to_treeview()
             self.clear()
-            # self.create_chart()
             messagebox.showinfo('Success', 'Data has been deleted')
 
     def update(self):
@@ -652,11 +654,10 @@ class App(customtkinter.CTk):
             database.update_products(id_entry, name_entry, stock_entry, shipped_entry, recieved_stock, onhand_stock, description_stock, supplier_entry, price_entry, cost_entry)
             self.add_to_treeview()
             self.clear()
-            # self.create_chart()
             messagebox.showinfo('Success', 'Data has been updated')
 
     def insert(self):
-        id_entry = self.id.get()
+        id_entry = int(database.get_highest_product_id()) + 1
         name_entry = self.name.get()
         stock_entry = self.stock.get()
         shipped_entry = self.shipped.get()
@@ -679,7 +680,6 @@ class App(customtkinter.CTk):
                 database.insert_product(id_entry, name_entry, stock_entry, shipped_entry, recieved_stock, onhand_stock, description_stock, supplier_entry, price_entry, cost_entry)
                 self.add_to_treeview()
                 self.clear()
-                # create_chart()
                 messagebox.showinfo('Success', 'Data has been inserted')
             except ValueError:
                 messagebox.showerror('Error', 'Stock should be an integer.')
@@ -688,8 +688,10 @@ class App(customtkinter.CTk):
         if clicked:
             self.tree.selection_remove(self.tree.focus())
             self.tree.focus('')
+        self.id.configure(state = "normal")
         self.id.delete(0,END)
         self.id.configure(placeholder_text = "Id")
+        self.id.configure(state = "readonly")
         self.name.delete(0,END)
         self.name.configure(placeholder_text = "Name")
         self.stock.delete(0,END)
@@ -740,6 +742,10 @@ class App(customtkinter.CTk):
 
         self.supplierId = customtkinter.CTkEntry(self, placeholder_text="Id")
         self.supplierId.place(x=410, y= 160)
+        self.supplierId.configure(placeholder_text = "Id")
+        self.supplierId.configure(state = "readonly")
+        
+        
 
         self.invoiceNum = customtkinter.CTkEntry(self, placeholder_text="Invoice Number")
         self.invoiceNum.place(x=240, y= 220)
@@ -828,7 +834,9 @@ class App(customtkinter.CTk):
         if selected_item:
             row = self.tree_supplier.item(selected_item)['values']
             self.clear_supplier()
+            self.supplierId.configure(state = "normal")
             self.supplierId.insert(0, row[0])
+            self.supplierId.configure(state = "readonly")
             self.supplierName.insert(0, row[1])
             self.invoiceNum.insert(0, row[2])
             self.contact.insert(0, row[3])
@@ -848,7 +856,6 @@ class App(customtkinter.CTk):
             database.delete_supplier(id_entry)
             self.add_to_treeview_supplier()
             self.clear_supplier()
-            # self.create_chart()
             messagebox.showinfo('Success', 'Supplier detail has been deleted')
 
     def update_supplier(self):
@@ -871,7 +878,7 @@ class App(customtkinter.CTk):
             messagebox.showinfo('Success', 'Data has been updated')
 
     def insert_supplier(self):
-        id_entry = self.supplierId.get()
+        id_entry = database.get_highest_supplier_id() + 1
         name_entry = self.supplierName.get()
         label_entry = self.invoiceNum.get()
         status_entry = self.contact.get()
@@ -897,8 +904,10 @@ class App(customtkinter.CTk):
         if clicked:
             self.tree_supplier.selection_remove(self.tree_supplier.focus())
             self.tree_supplier.focus('')
+        self.supplierId.configure(state = "normal")
         self.supplierId.delete(0,END)
         self.supplierId.configure(placeholder_text = "Id")
+        self.supplierId.configure(state = "readonly")
         self.supplierName.delete(0,END)
         self.supplierName.configure(placeholder_text = "Name")
         self.invoiceNum.delete(0,END)
@@ -947,6 +956,8 @@ class App(customtkinter.CTk):
 
         self.CustId = customtkinter.CTkEntry(self, placeholder_text="Id")
         self.CustId.place(x=410, y= 160)
+        self.CustId.configure(placeholder_text = "Id")
+        self.CustId.configure(state = "readonly")
 
         self.CustEmail = customtkinter.CTkEntry(self, placeholder_text="Email")
         self.CustEmail.place(x=240, y= 220)
@@ -1038,7 +1049,9 @@ class App(customtkinter.CTk):
         if selected_item:
             row = self.tree.item(selected_item)['values']
             self.clear_customer()
+            self.CustId.configure(state = "normal")
             self.CustId.insert(0, row[0])
+            self.CustId.configure(state = "readonly")
             self.custName.insert(0, row[1])
             self.CustEmail.insert(0, row[2])
             self.CustPhone.insert(0, row[3])
@@ -1081,7 +1094,7 @@ class App(customtkinter.CTk):
             messagebox.showinfo('Success', 'Data has been updated')
 
     def insert_customer(self):
-        id_entry = self.CustId.get()
+        id_entry = database.get_highest_customer_id() + 1
         name_entry = self.custName.get()
         email_entry = self.CustEmail.get()
         phone_entry = self.CustPhone.get()
@@ -1107,8 +1120,10 @@ class App(customtkinter.CTk):
         if clicked:
             self.tree.selection_remove(self.tree.focus())
             self.tree.focus('')
+        self.CustId.configure(state = "normal")
         self.CustId.delete(0,END)
         self.CustId.configure(placeholder_text = "Id")
+        self.CustId.configure(state = "readonly")
         self.custName.delete(0,END)
         self.custName.configure(placeholder_text = "Name")
         self.CustEmail.delete(0,END)
