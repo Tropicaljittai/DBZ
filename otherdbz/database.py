@@ -37,7 +37,9 @@ def create_table():
             ProductId INTEGER NOT NULL,
             Variant TEXT,
             Size TEXT,
-            Stock INTEGER,
+            ShippedStock INTEGER,
+            RecievedStock INTEGER,
+            OnHandStock INTEGER,
             AdditionalPrice REAL,
             FOREIGN KEY (ProductId) REFERENCES Products(ProductId));
     ''')
@@ -45,51 +47,6 @@ def create_table():
     connect.commit()
     connect.close()
 
-def get_highest_product_id():
-    connection = sqlite3.connect('Data.db')
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT MAX(id) FROM Products")
-    
-    highest_product_id = cursor.fetchone()[0]
-
-    if highest_product_id is None:
-        connection.close()
-        return 0
-    
-    connection.close()
-    return highest_product_id
-
-def get_highest_customer_id():
-    connection = sqlite3.connect('Data.db')
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT MAX(id) FROM Customer")
-    
-    highest_product_id = cursor.fetchone()[0]
-
-    if highest_product_id is None:
-        connection.close()
-        return 0
-    
-    connection.close()
-    return int(highest_product_id)
-
-def get_highest_supplier_id():
-    connection = sqlite3.connect('Data.db')
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT MAX(SupplierId) FROM Supplier")
-    
-    highest_product_id = cursor.fetchone()[0]
-
-    if highest_product_id is None:
-        connection.close()
-        return 0
-    
-    connection.close()
-    return int(highest_product_id)
-        
 def fetch_stocks(id):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
@@ -158,6 +115,107 @@ def id_exists(id):
     result = cursor.fetchone()
     connect.close()
     return result[0] > 0
+
+def count_variants():
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+    cursor.execute('SELECT COUNT(*) FROM Variants')
+    Products = cursor.fetchone()
+    connect.close()
+    return Products
+
+def fetch_variants():
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+    cursor.execute('SELECT * FROM Variants')
+    Products = cursor.fetchall()
+    connect.close()
+    return Products
+
+def insert_variants(VariantId, ProductId, Variant, Size, ShippedStock, RecievedStock, OnHandStock, AdditionalPrice):
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+    cursor.execute('INSERT INTO Variants (VariantId, ProductId, Variant, Size, ShippedStock, RecievedStock, OnHandStock, AdditionalPrice) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (VariantId, ProductId, Variant, Size, ShippedStock, RecievedStock, OnHandStock, AdditionalPrice))
+    connect.commit()
+    connect.close()
+
+def delete_variants(id):
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+    cursor.execute('DELETE FROM Variants WHERE VariantId = ?', (id,))
+    connect.commit()
+    connect.close()
+
+def update_variants(VariantId, Variant, Size, ShippedStock, RecievedStock, OnHandStock, AdditionalPrice):
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+    cursor.execute("UPDATE Variants SET Variant = ?, Size = ?, ShippedStock = ?, RecievedStock = ?, OnHandStock = ?, AdditionalPrice = ? WHERE VariantId = ?", (Variant, Size, ShippedStock, RecievedStock, OnHandStock, AdditionalPrice, VariantId))
+    connect.commit()
+    connect.close()
+
+def id_exists_variants(id):
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+    cursor.execute('SELECT COUNT(*) FROM Variants WHERE VariantId = ?', (id,))
+    result = cursor.fetchone()
+    connect.close()
+    return result[0] > 0
+
+def check_stock_sum_update(product_id, variant_id, shipped_stock, received_stock, onhand_stock):
+    # Connect to the SQLite database (change 'your_database.db' to your actual database file)
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    try:
+        # Execute the SQL query to get the sum of columns in Variants table
+        cursor.execute(f"SELECT IFNULL(SUM(ShippedStock) , 0) + {shipped_stock}, IFNULL(SUM(RecievedStock), 0) + {received_stock}, IFNULL(SUM(OnHandStock), 0) + {onhand_stock} FROM Variants WHERE ProductId = {product_id} AND VariantId != {variant_id}")
+        variants_sum = cursor.fetchone()
+
+        # Execute the SQL query to get the sum of columns in Products table for the specified ProductId
+        cursor.execute(f"SELECT IFNULL(SUM(ShippedStock), 0), IFNULL(SUM(RecievedStock), 0), IFNULL(SUM(OnHandStock), 0) FROM Products WHERE id = {product_id}")
+        products_sum = cursor.fetchone()
+        
+        # Check if the sum in Variants is greater than the sum in Products
+        for i in range(len(variants_sum)):
+            if variants_sum[i] > products_sum[i]: 
+                return False
+            else:
+                return True
+
+    except sqlite3.Error as e:
+        print(f"Error: {e}")
+
+    finally:
+        # Close the database connection
+        connection.close()
+
+def check_stock_sum(product_id, shipped_stock, received_stock, onhand_stock):
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    try:
+        # Execute the SQL query to get the sum of columns in Variants table
+        cursor.execute(f"SELECT SUM(ShippedStock) + {shipped_stock}, SUM(RecievedStock) + {received_stock}, SUM(OnHandStock) + {onhand_stock} FROM Variants WHERE ProductId = {product_id}")
+        variants_sum = cursor.fetchone()
+
+        # Execute the SQL query to get the sum of columns in Products table for the specified ProductId
+        cursor.execute(f"SELECT SUM(ShippedStock), SUM(RecievedStock), SUM(OnHandStock) FROM Products WHERE id = {product_id}")
+        products_sum = cursor.fetchone()
+
+        # Check if the sum in Variants is greater than the sum in Products
+        for i in range(len(variants_sum)):
+            if variants_sum[i] > products_sum[i]: 
+                return False
+            else:
+                return True
+
+    except sqlite3.Error as e:
+        print(f"Error: {e}")
+
+    finally:
+        # Close the database connection
+        connection.close()
+
 
 def create_supplier():
     connect = sqlite3.connect('Data.db')
@@ -247,21 +305,6 @@ def fetch_orders():
     connect.close()
     return Products
 
-def get_highest_order_id():
-    connection = sqlite3.connect('Data.db')
-    cursor = connection.cursor()
-
-    cursor.execute("SELECT MAX(OrderId) FROM Orders")
-    
-    highest_product_id = cursor.fetchone()[0]
-
-    if highest_product_id is None:
-        connection.close()
-        return 0
-    
-    connection.close()
-    return int(highest_product_id)
-
 def insert_orders(ItemQuantity, PaymentStatus, ShipmentStatus, OrderDate, OrderTotal, PaymentType, CustomerId):
     try:
         connect = sqlite3.connect('Data.db')
@@ -335,49 +378,86 @@ def fetch_customer_ids():
     connect.close()
     return Products
 
-def get_customer_name_by_id(customer_id):
-    # Connect to the SQLite database
+def get_isPaid(orderId):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
 
     try:
-        # SQL query to fetch the customer's name based on the ID
-        cursor.execute('SELECT name FROM Customer WHERE id = ?', (customer_id,))
+        cursor.execute('SELECT PaymentStatus FROM Orders WHERE orderId = ?', (orderId,))
         result = cursor.fetchone()
 
         if result:
-            return result[0]  # Return the customer's name
+            return result[0] 
         else:
-            return None  # No customer found for the given ID
+            return None  
 
     except sqlite3.Error as e:
         print(f"Database error: {e}")
         return None
 
     finally:
-        # Close the database connection
         connect.close()
+
+def get_customer_name_by_id(customer_id):
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+
+    try:
+        cursor.execute('SELECT name FROM Customer WHERE id = ?', (customer_id,))
+        result = cursor.fetchone()
+
+        if result:
+            return result[0] 
+        else:
+            return None
+
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+
+    finally:
+        connect.close()
+
+def get_shipStat(orderId):
+    connect = sqlite3.connect('Data.db')
+    cursor = connect.cursor()
+
+    try:
+        cursor.execute('SELECT ShipmentStatus FROM orders WHERE id = ?', (orderId,))
+        result = cursor.fetchone()
+
+        if result:
+            return result[0] 
+        else:
+            return None 
+
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+
+    finally:
+        connect.close()
+
+        
 
 def fetch_customer_address(customer_id):
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
 
     try:
-        # SQL query to fetch the customer's name based on the ID
         cursor.execute('SELECT address FROM Customer WHERE id = ?', (customer_id,))
         result = cursor.fetchone()
 
         if result:
-            return result[0]  # Return the customer's name
+            return result[0] 
         else:
-            return None  # No customer found for the given ID
+            return None
 
     except sqlite3.Error as e:
         print(f"Database error: {e}")
         return None
 
     finally:
-        # Close the database connection
         connect.close()
 
 
@@ -432,6 +512,7 @@ def count_orders():
     Orders = cursor.fetchone()
     connect.close()
     return Orders
+    
 def count_details():
     connect = sqlite3.connect('Data.db')
     cursor = connect.cursor()
@@ -479,8 +560,71 @@ def id_exists_details(id):
     connect.close()
     return result[0] > 0
 
+def get_highest_product_id():
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(id) FROM Products")
+    
+    highest_product_id = cursor.fetchone()[0]
+
+    if highest_product_id is None:
+        connection.close()
+        return 0
+    
+    connection.close()
+    return highest_product_id
+
+def get_highest_variant_id():
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(VariantId) FROM Variants")
+    
+    highest_variant_id = cursor.fetchone()[0]
+
+    if highest_variant_id is None:
+        connection.close()
+        return 0
+    
+    connection.close()
+    return int(highest_variant_id)
+
+def get_highest_customer_id():
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(id) FROM Customer")
+    
+    highest_product_id = cursor.fetchone()[0]
+
+    if highest_product_id is None:
+        connection.close()
+        return 0
+    
+    connection.close()
+    return int(highest_product_id)
+
+def get_highest_supplier_id():
+    connection = sqlite3.connect('Data.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT MAX(SupplierId) FROM Supplier")
+    
+    highest_product_id = cursor.fetchone()[0]
+
+    if highest_product_id is None:
+        connection.close()
+        return 0
+    
+    connection.close()
+    return int(highest_product_id)
+
 create_table()
 create_supplier()
 create_customer()
 create_orders()
 create_details()
+
+
+        

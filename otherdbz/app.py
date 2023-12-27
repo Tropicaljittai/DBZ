@@ -41,12 +41,12 @@ class App(customtkinter.CTk):
         self.sidebar_button_5.grid(row=5, column=0, padx=20, pady=10)
         self.sidebar_button_6 = customtkinter.CTkButton(self.sidebar_frame, text="Sales")
         self.sidebar_button_6.grid(row=6, column=0, padx=20, pady=10)
+        self.sidebar_button_7 = customtkinter.CTkButton(self.sidebar_frame, text="Variants", command=self.variantPages)
+        self.sidebar_button_7.grid(row=7, column=0, padx=20, pady=10)
 
     def calculate_sum(self):
-        # Calculate the sum of all total entry box values
         total_sum = sum(float(entry_set[3].get()) for entry_set in self.entries_in_scrollable_frame)
 
-        # Update the readonly entry with the calculated sum
         self.sum_entry.configure(state='normal')
         self.sum_entry.delete(0, 'end')
         self.sum_entry.insert(0, int(total_sum))
@@ -56,23 +56,18 @@ class App(customtkinter.CTk):
             available = database.fetch_stocks(id)
             if int(qty_entry.get()) <= available[0]:
                 try:
-                    # Get the quantity entered by the user
                     quantity = int(qty_entry.get())
 
-                    # Get the price from the readonly entry
                     price = float(price_entry.get())
 
-                    # Calculate the total
                     total = quantity * price
 
-                    # Update the total entry with the calculated total
                     total_entry.configure(state = "normal")
                     total_entry.delete(0, 'end')
                     total_entry.insert(0, int(total))
                     total_entry.configure(state = "readonly")
 
                 except ValueError:
-                    # Handle the case where the entered value is not an integer
                     print("Invalid quantity. Please enter a valid integer.")
             else:
                 messagebox.showerror('Error', "Not enough stock!")
@@ -236,7 +231,6 @@ class App(customtkinter.CTk):
 
                 plus = customtkinter.CTkButton(self.scrollable_frame, text="X", command=lambda entry=[new_entry, new_entry_name, new_entry_price, new_entry_total, new_entry_qty]: self.delete_selected_entry(entry, plus), width=30)
                 plus.grid(row=1+len(self.entries_in_scrollable_frame), column=5, padx=(10,10), pady=10)
-                # Add the new entry to a list if you need to access it later
                 self.ids_in_frame.append(selected_id)
                 self.entries_in_scrollable_frame.append([new_entry, new_entry_name, new_entry_price, new_entry_total, new_entry_qty])
                 
@@ -251,48 +245,36 @@ class App(customtkinter.CTk):
         total_qty = 0
         for entry_set in self.entries_in_scrollable_frame:
             try:
-                qty = int(entry_set[4].get())  # Assuming qty is at index 4
+                qty = int(entry_set[4].get()) 
                 total_qty += qty
             except ValueError:
-                # Handle the case where the entry is not a valid integer
                 print("Invalid quantity in one of the rows.")
         return total_qty
-        
-       
-            
-                
-        
-
 
     def create_and_insert_order(self):
-    # Check if there are entries to process
         if not self.entries_in_scrollable_frame:
             messagebox.showerror('Error', 'No item has been added')
             return
 
-        # Validate entries
         if self.customerSelected.get() == 'Customer' or self.payment.get() == "Payment Type" or not self.sum_entry.get():
             messagebox.showerror('Error', 'Fill in all the entries!')
             return
 
-        # Gather data for the order
         try:
             total_quantity = self.calculate_total_qty()
             order_total = float(self.sum_entry.get())
             payment_type = self.payment.get()
-            customer_id = self.customerSelected.get().split(' -')[0]  # Assuming the ID is before ' -'
+            customer_id = self.customerSelected.get().split(' -')[0]
             payment_status = 0
             shipment_status = 'Pending'
             current_datetime = datetime.now()
             order_date = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
-            # Insert the order and get the OrderId
             order_id = database.insert_orders(total_quantity, payment_status, shipment_status, order_date, order_total, payment_type, customer_id)
 
-            # Gather and insert each order detail
             for entry_set in self.entries_in_scrollable_frame:
-                product_id = entry_set[0].get()  # Product ID
-                quantity = int(entry_set[3].get())  # Quantity
+                product_id = entry_set[0].get()
+                quantity = int(entry_set[3].get())
                 if quantity <= 0:
                     raise ValueError("Quantity can't be zero or negative")
                 database.insert_details(order_id,product_id, quantity)
@@ -303,14 +285,12 @@ class App(customtkinter.CTk):
             messagebox.showerror('Error', f'An error occurred: {e}')
 
     def delete_selected_entry(self, entry_to_delete, button_to_delete):
-        # Remove the entry from the GUI
         for i in entry_to_delete:
             i.grid_forget()
         button_to_delete.grid_forget()
         id = entry_to_delete[0].get()
 
         self.ids_in_frame.remove(id)
-        # Remove the entry from the list
         self.entries_in_scrollable_frame.remove(entry_to_delete)
         self.deletes_in_scrollable_frame.remove(button_to_delete)
         
@@ -321,22 +301,15 @@ class App(customtkinter.CTk):
             widget.destroy()
 
         self.sidebar()
+        custom_font=("Arial",30)
+
         
-        # self.l = customtkinter.CTkLabel(self, font=custom_font, text="Customer Details", text_color="White")
-        # self.label.place(x=200, y= 30)
-
-        # self.title = customtkinter.CTkLabel(self, font=("Arial Rounded MT Bold",25),text="Orders", text_color="#4477F9")
-        # self.title.place(x= 210,y=55)
-        # self.detail = customtkinter.CTkLabel(self, font=("Arial Rounded MT Bold",25),text="Details", text_color="#4477F9")
-        # self.detail.place(x= 1060,y=55)
-
+        self.label = customtkinter.CTkLabel(self, font=custom_font, text="Orders", text_color="White")
+        self.label.place(x=200, y= 30)
+        
         self.scrollable_frame = customtkinter.CTkScrollableFrame(self, width=820, height=600)
         self.scrollable_frame.place(x = 200, y = 100)
         self.entries_in_scrollable_frame = []
-
-        
-    
-
         self.orderIdPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
         self.orderIdPOS.insert(0, "Order Id")
         self.orderIdPOS.configure(state = "readonly")
@@ -357,22 +330,6 @@ class App(customtkinter.CTk):
         self.totPricePOS.configure(state = "readonly")
         self.totPricePOS.grid(row=0, column=3, padx = (5, 0),  pady = (10, 10))
 
-        self.payStatPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
-        self.payStatPOS.insert(0, "Shipping Status")
-        self.payStatPOS.configure(state = "readonly")
-        self.payStatPOS.grid(row=0, column=4, padx = (5, 0),  pady = (10, 10))
-
-        self.shipStatPOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
-        self.shipStatPOS.insert(0, "Order Date")
-        self.shipStatPOS.configure(state = "readonly")
-        self.shipStatPOS.grid(row=0, column=5, padx = (5, 0),  pady = (10, 10))
-
-        
-
-
-        view = customtkinter.CTkButton(self.scrollable_frame, text="view")
-        view.grid(row=1+len(self.entries_in_scrollable_frame), column=5, padx=(5,10), pady=10)
-
         # self.datePOS = customtkinter.CTkEntry(self.scrollable_frame, justify = 'center',width=110)
         # self.datePOS.insert(0, "Order Date")
         # self.datePOS.configure(state = "readonly")
@@ -381,31 +338,6 @@ class App(customtkinter.CTk):
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure((1, 2), weight=1)
         self.grid_rowconfigure((0, 1, 2), weight=1)
-        
-        self.midframe = customtkinter.CTkScrollableFrame(self, width=435, height = 400, corner_radius=10)
-        self.midframe.grid(row=0, column=0, rowspan=4, sticky="nsew")
-        self.midframe.grid_rowconfigure(8, weight=1)
-        self.midframe.place(x = 1050, y=100)
-
-        self.productId = customtkinter.CTkEntry(self.midframe, justify = 'center',width=100)
-        self.productId.insert(0, "Product Id")
-        self.productId.configure(state = "readonly")
-        self.productId.grid(row=0, column=0, padx = (7, 0), pady = (10, 10))
-
-        self.productNames = customtkinter.CTkEntry(self.midframe, justify = 'center',width=100)
-        self.productNames.insert(0, "Name")
-        self.productNames.configure(state = "readonly")
-        self.productNames.grid(row=0, column=1, padx = (7, 0),  pady = (10, 10))
-
-        self.qty = customtkinter.CTkEntry(self.midframe, justify = 'center',width=100)
-        self.qty .insert(0, "Quantity")
-        self.qty .configure(state = "readonly")
-        self.qty .grid(row=0, column=2, padx = (7, 0),  pady = (10, 10))
-
-        self.prices = customtkinter.CTkEntry(self.midframe, justify = 'center',width=100)
-        self.prices.insert(0, "Price")
-        self.prices.configure(state = "readonly")
-        self.prices.grid(row=0, column=3, padx = (7, 0),  pady = (10, 10))
 
         amount = database.count_orders()
         orders = database.fetch_orders()
@@ -433,38 +365,41 @@ class App(customtkinter.CTk):
             self.entry.configure(state = "readonly")
             self.entry.grid(row=1+i, column=2, padx = (5, 0),  pady = (10, 10))
 
+        for i in range(amount[0]):
+            
+            box = ['paid','unpaid']
+            current_stat= database.get_isPaid(orders[i][0])
+            if current_stat == 1:
+                currentStatus = "paid"
+            else:
+                currentStatus ="unpaid"
+            self.combo = customtkinter.CTkComboBox(self.scrollable_frame,justify = 'center',width=110,values=box,state="readonly")
+            self.combo.set(currentStatus)
+            self.combo.grid(row=1+i, column=3, padx = (5, 0),  pady = (10, 10))
+        
+        # for i in range(amount[0]):
+        #     box = ['pending','delivered',"cancelled"]
+        #     current_stat= database.get_shipStat(orders[i][0])
+        #     self.combo = customtkinter.CTkComboBox(self.scrollable_frame,justify = 'center',width=110,values=box,state="readonly")
+        #     self.combo.set(current_stat)
+        #     self.combo.grid(row=1+i, column=4, padx = (5, 0),  pady = (10, 10))
+
+
+
         self.plus_buttons = []
 
         self.entries_in_scrollable_frame = []
         self.ids_in_frame = []
         self.deletes_in_scrollable_frame = []
-
-        self.idsProduct = []
-        for i in range(amount[0]):
-            self.Identry = customtkinter.CTkEntry(self.midframe, justify = 'center',width=110)
-            self.Identry.insert(0, orders[i][0])
-            self.Identry.configure(state = "readonly")
-            self.Identry.grid(row=1+i, column=0, padx = (5, 0),  pady = (10, 10))
-            self.idsProduct.append(self.Identry)
-
-        for i in range(amount[0]):
-            self.entry = customtkinter.CTkEntry(self.midframe, justify = 'center',width=110)
-            self.entry.insert(0, orders[i][7])
-            self.entry.configure(state = "readonly")
-            self.entry.grid(row=1+i, column=1, padx = (5, 0),  pady = (10, 10))
-
-        for i in range(amount[0]):
-            self.entry = customtkinter.CTkEntry(self.midframe, justify = 'center',width=110)
-            self.entry.insert(0, orders[i][7])
-            self.entry.configure(state = "readonly")
-            self.entry.grid(row=1+i, column=2, padx = (5, 0),  pady = (10, 10))
-
        
 
 
 
 
 # ----------------------------------------------------- PRODUCTS PAGE -----------------------------------------------------
+    def variantUpd(self):
+        productId = self.id.get()
+        self.variantPage(productId)
 
     def products(self):
         for widget in self.winfo_children():
@@ -478,7 +413,7 @@ class App(customtkinter.CTk):
         custom_font=("Arial",30)
 
 
-        frame = customtkinter.CTkFrame(self, width= 400, height = 510)
+        frame = customtkinter.CTkFrame(self, width= 400, height = 540)
         frame.place(x= 200, y=100)
         
         self.label = customtkinter.CTkLabel(self, font=custom_font, text="Product Details", text_color="White")
@@ -539,6 +474,9 @@ class App(customtkinter.CTk):
 
         self.clearbutton = customtkinter.CTkButton(self, command=lambda:self.clear(True), text="Clear")
         self.clearbutton.place(x=410, y=520)
+
+        self.updatevariant = customtkinter.CTkButton(self, command=self.variantUpd, text="Update Variant")
+        self.updatevariant.place(x=325, y=580)
 
         self.tabview = customtkinter.CTkTabview(self, width=250)
 
@@ -681,6 +619,7 @@ class App(customtkinter.CTk):
                 self.add_to_treeview()
                 self.clear()
                 messagebox.showinfo('Success', 'Data has been inserted')
+                self.variantPage(id_entry)
             except ValueError:
                 messagebox.showerror('Error', 'Stock should be an integer.')
 
@@ -712,6 +651,353 @@ class App(customtkinter.CTk):
 
     def add_to_treeview(self):
         products = database.fetch_products()
+        self.tree.delete(*self.tree.get_children())
+        for i in products:
+            self.tree.insert('', END, values=i)
+
+# ----------------------------------------------------- VARIANTS PAGE -----------------------------------------------------
+    def variantPages(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        self.title("CustomTkinter complex_example.py")
+        self.geometry(f"{1600}x{900}")
+
+        self.sidebar()
+
+        custom_font=("Arial",30)
+
+
+        frame = customtkinter.CTkFrame(self, width= 400, height = 510)
+        frame.place(x= 200, y=100)
+        
+        self.label = customtkinter.CTkLabel(self, font=custom_font, text="Variants", text_color="White")
+        self.label.place(x=200, y= 30)
+
+        
+
+        self.variantId = customtkinter.CTkEntry(self)
+        self.variantId.place(x=240, y= 160)
+        self.variantId.configure(placeholder_text = "VariantId")
+        self.variantId.configure(state="readonly")
+
+        self.productId = customtkinter.CTkEntry(self)
+        self.productId.place(x=410, y= 160)
+        self.productId.configure(placeholder_text = "ProductId")
+        self.productId.configure(state="readonly")
+
+        self.variant = customtkinter.CTkEntry(self, placeholder_text="Variant")
+        self.variant.place(x=240, y= 220)
+
+        self.size = customtkinter.CTkEntry(self, placeholder_text="Size")
+        self.size.place(x=410, y= 220)
+        
+        self.shipped = customtkinter.CTkEntry(self, placeholder_text="Shipped")
+        self.shipped.place(x=240, y= 280)
+
+        self.recieved = customtkinter.CTkEntry(self, placeholder_text="Recieved Stock")
+        self.recieved.place(x=410, y= 280)
+        
+        self.on_hand = customtkinter.CTkEntry(self, placeholder_text="On Hand Stock")
+        self.on_hand.place(x=240, y= 340)
+
+        self.price = customtkinter.CTkEntry(self, placeholder_text="Additional Price")
+        self.price.place(x=410, y= 340)
+
+        
+
+
+        self.add_button = customtkinter.CTkButton(self, command=self.insert_variant, text="Add")
+        self.add_button.place(x=240, y=400)
+
+        self.update_button = customtkinter.CTkButton(self, command=self.update_variant, text="Update")
+        self.update_button.place(x=410, y=400)
+
+        self.delete_button = customtkinter.CTkButton(self, command=self.delete_variant, text="Delete")
+        self.delete_button.place(x=240, y=460)
+
+        self.clearbutton = customtkinter.CTkButton(self, command=lambda:self.clear_variant(True), text="Clear")
+        self.clearbutton.place(x=410, y=460)
+
+        self.tabview = customtkinter.CTkTabview(self, width=250)
+
+
+        self.style = ttk.Style(self)
+
+        self.style.theme_use("default")
+    
+        self.style.configure("Treeview",
+                            background="#2a2d2e",
+                            foreground="white",
+                            rowheight=50,
+                            fieldbackground="#343638",
+                            bordercolor="#343638")
+        
+        
+        self.style.map('Treeview', background=[('selected', '#22559b')])
+        
+        self.style.configure("Treeview.Heading",
+                                    background="#565b5e",
+                                    foreground="white",
+                                    relief="flat")
+        
+        self.style.map("Treeview.Heading",
+                      background=[('active', '#3484F0')])
+        
+        self.tree = ttk.Treeview(self, height=20)
+
+        self.tree['columns'] = ('Product ID', 'Variant Id', 'Variant', 'Size','Shipped', 'Recieved', 'On Hand', 'Additional Price')
+
+        self.tree.column('#0', width=0, stretch=tk.NO)
+        self.tree.column('Product ID', anchor=tk.CENTER, width=130)
+        self.tree.column('Variant Id', anchor=tk.CENTER, width=130)
+        self.tree.column('Variant', anchor=tk.CENTER, width=130)
+        self.tree.column('Size', anchor=tk.CENTER, width=130)
+        self.tree.column('Shipped', anchor=tk.CENTER, width=130)
+        self.tree.column('Recieved', anchor=tk.CENTER, width=130)
+        self.tree.column('On Hand', anchor=tk.CENTER, width=130)
+        self.tree.column('Additional Price', anchor=tk.CENTER, width=130)
+
+        self.tree.heading('Product ID', text="Product ID")
+        self.tree.heading('Variant Id', text="Variant Id")
+        self.tree.heading('Variant', text="Variant")
+        self.tree.heading('Size', text="Size")
+        self.tree.heading('Shipped', text="Shipped")
+        self.tree.heading('Recieved', text="Recieved")
+        self.tree.heading('On Hand', text='On Hand')
+        self.tree.heading('Additional Price', text="Additional Price (Rp)")
+
+
+        self.tree.place(x = 1000, y = 150)
+        self.tree.bind('<ButtonRelease>', self.display_data_variant)
+
+        self.add_to_treeview_variant()
+
+    def variantPage(self, ProductId):
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        self.title("CustomTkinter complex_example.py")
+        self.geometry(f"{1600}x{900}")
+
+        self.sidebar()
+
+        custom_font=("Arial",30)
+
+
+        frame = customtkinter.CTkFrame(self, width= 400, height = 510)
+        frame.place(x= 200, y=100)
+        
+        self.label = customtkinter.CTkLabel(self, font=custom_font, text="Variants", text_color="White")
+        self.label.place(x=200, y= 30)
+
+        
+
+        self.variantId = customtkinter.CTkEntry(self)
+        self.variantId.place(x=240, y= 160)
+        self.variantId.configure(placeholder_text = "VariantId")
+        self.variantId.configure(state="readonly")
+
+        self.productId = customtkinter.CTkEntry(self)
+        self.productId.place(x=410, y= 160)
+        self.productId.configure(placeholder_text = "ProductId")
+        self.productId.insert(0, str(ProductId))
+        self.productId.configure(state="readonly")
+
+        self.variant = customtkinter.CTkEntry(self, placeholder_text="Variant")
+        self.variant.place(x=240, y= 220)
+
+        self.size = customtkinter.CTkEntry(self, placeholder_text="Size")
+        self.size.place(x=410, y= 220)
+        
+        self.shipped = customtkinter.CTkEntry(self, placeholder_text="Shipped")
+        self.shipped.place(x=240, y= 280)
+
+        self.recieved = customtkinter.CTkEntry(self, placeholder_text="Recieved Stock")
+        self.recieved.place(x=410, y= 280)
+        
+        self.on_hand = customtkinter.CTkEntry(self, placeholder_text="On Hand Stock")
+        self.on_hand.place(x=240, y= 340)
+
+        self.price = customtkinter.CTkEntry(self, placeholder_text="Additional Price")
+        self.price.place(x=410, y= 340)
+
+        
+
+
+        self.add_button = customtkinter.CTkButton(self, command=self.insert_variant, text="Add")
+        self.add_button.place(x=240, y=400)
+
+        self.update_button = customtkinter.CTkButton(self, command=self.update_variant, text="Update")
+        self.update_button.place(x=410, y=400)
+
+        self.delete_button = customtkinter.CTkButton(self, command=self.delete_variant, text="Delete")
+        self.delete_button.place(x=240, y=460)
+
+        self.clearbutton = customtkinter.CTkButton(self, command=lambda:self.clear_variant(True), text="Clear")
+        self.clearbutton.place(x=410, y=460)
+
+        self.tabview = customtkinter.CTkTabview(self, width=250)
+
+
+        self.style = ttk.Style(self)
+
+        self.style.theme_use("default")
+    
+        self.style.configure("Treeview",
+                            background="#2a2d2e",
+                            foreground="white",
+                            rowheight=50,
+                            fieldbackground="#343638",
+                            bordercolor="#343638")
+        
+        
+        self.style.map('Treeview', background=[('selected', '#22559b')])
+        
+        self.style.configure("Treeview.Heading",
+                                    background="#565b5e",
+                                    foreground="white",
+                                    relief="flat")
+        
+        self.style.map("Treeview.Heading",
+                      background=[('active', '#3484F0')])
+        
+        self.tree = ttk.Treeview(self, height=20)
+
+        self.tree['columns'] = ('Product ID', 'Variant Id', 'Variant', 'Size','Shipped', 'Recieved', 'On Hand', 'Additional Price')
+
+        self.tree.column('#0', width=0, stretch=tk.NO)
+        self.tree.column('Product ID', anchor=tk.CENTER, width=130)
+        self.tree.column('Variant Id', anchor=tk.CENTER, width=130)
+        self.tree.column('Variant', anchor=tk.CENTER, width=130)
+        self.tree.column('Size', anchor=tk.CENTER, width=130)
+        self.tree.column('Shipped', anchor=tk.CENTER, width=130)
+        self.tree.column('Recieved', anchor=tk.CENTER, width=130)
+        self.tree.column('On Hand', anchor=tk.CENTER, width=130)
+        self.tree.column('Additional Price', anchor=tk.CENTER, width=130)
+
+        self.tree.heading('Product ID', text="Product ID")
+        self.tree.heading('Variant Id', text="Variant Id")
+        self.tree.heading('Variant', text="Variant")
+        self.tree.heading('Size', text="Size")
+        self.tree.heading('Shipped', text="Shipped")
+        self.tree.heading('Recieved', text="Recieved")
+        self.tree.heading('On Hand', text='On Hand')
+        self.tree.heading('Additional Price', text="Additional Price (Rp)")
+
+
+        self.tree.place(x = 1000, y = 150)
+        self.tree.bind('<ButtonRelease>', self.display_data_variant)
+
+        self.add_to_treeview_variant()
+
+    def display_data_variant(self, event):
+        selected_item = self.tree.focus()
+        if selected_item:
+            row = self.tree.item(selected_item)['values']
+            self.clear_variant()
+            self.variantId.configure(state="normal")
+            self.variantId.insert(0, row[0])
+            self.variantId.configure(state="readonly")    
+            self.productId.configure(state="normal")
+            self.productId.insert(0, row[1])
+            self.productId.configure(state="readonly")  
+            self.variant.insert(0, row[2])
+            self.size.insert(0, row[3])
+            self.shipped.insert(0, row[4])
+            self.recieved.insert(0, row[5])
+            self.on_hand.insert(0, row[6])
+            self.price.insert(0, row[7])
+        else:
+            pass
+
+    def delete_variant(self):
+        selected_item = self.tree.focus()
+        if not selected_item:   
+            messagebox.showerror('Error', 'Choose a product to delete')
+        else:
+            id_entry = self.id.get()
+            database.delete_variants(id_entry)
+            self.add_to_treeview_variant()
+            self.clear_variant()
+            messagebox.showinfo('Success', 'Data has been deleted')
+
+    def update_variant(self):
+        id_entry = self.productId.get()
+        variandId_entry = self.variantId.get()
+        selected_item = self.tree.focus()
+        shipped_entry = self.shipped.get()
+        recieved_stock = self.recieved.get()
+        onhand_stock = self.on_hand.get()
+        if not selected_item:
+            messagebox.showerror('Error', 'Choose a product to update')
+        elif database.check_stock_sum_update(id_entry, variandId_entry, shipped_entry, recieved_stock, onhand_stock) == False:
+            messagebox.showerror('Error', 'Sum of stocks exceeds the original stock')
+        else:
+            id_entry = self.productId.get()
+            variandId_entry = self.variantId.get()
+            variant_entry = self.variant.get()
+            sz_entry = self.size.get()
+            shipped_entry = self.shipped.get()
+            recieved_stock = self.recieved.get()
+            onhand_stock = self.on_hand.get()
+            price_entry = self.price.get()
+            database.update_variants(variandId_entry, variant_entry, sz_entry, shipped_entry, recieved_stock, onhand_stock, price_entry)
+            self.add_to_treeview_variant()
+            self.clear_variant()
+            messagebox.showinfo('Success', 'Data has been updated')
+
+    def insert_variant(self):
+        variandId_entry = int(database.get_highest_variant_id()) + 1
+        id_entry = self.productId.get()
+        variant_entry = self.variant.get()
+        sz_entry = self.size.get()
+        shipped_entry = self.shipped.get()
+        recieved_stock = self.recieved.get()
+        onhand_stock = self.on_hand.get()
+        price_entry = self.price.get()
+        if not (id_entry and variandId_entry and variant_entry and shipped_entry and recieved_stock and onhand_stock and sz_entry and price_entry):
+            messagebox.showerror('Error', 'Enter all fields.')
+        elif database.check_stock_sum(id_entry, shipped_entry, recieved_stock, onhand_stock)  == False:
+            messagebox.showerror('Error', 'Sum of stocks exceeds the original stock')
+        elif database.id_exists_variants(variandId_entry):
+            messagebox.showerror('Error', "Id already exists.")
+        else:
+            try:
+                database.insert_variants(variandId_entry, id_entry, variant_entry, sz_entry, shipped_entry, recieved_stock, onhand_stock, price_entry)
+                self.add_to_treeview_variant()
+                self.clear_variant()
+                messagebox.showinfo('Success', 'Data has been inserted')
+            except ValueError:
+                messagebox.showerror('Error', 'Stock should be an integer.')
+
+    def clear_variant(self, *clicked):
+        if clicked:
+            self.tree.selection_remove(self.tree.focus())
+            self.tree.focus('')
+        self.productId.configure(state = "normal")
+        self.productId.delete(0,END)
+        self.productId.configure(placeholder_text = "ProductId")
+        self.productId.configure(state = "readonly")
+        self.variantId.configure(state = "normal")
+        self.variantId.delete(0,END)
+        self.variantId.configure(placeholder_text = "ProductId")
+        self.variantId.configure(state = "readonly")
+        self.shipped.delete(0,END)
+        self.shipped.configure(placeholder_text = "Shipped")
+        self.recieved.delete(0,END)
+        self.recieved.configure(placeholder_text = "Recieved")
+        self.on_hand.delete(0,END)
+        self.on_hand.configure(placeholder_text = "On Hand")
+        self.price.delete(0,END)
+        self.price.configure(placeholder_text = "Price")
+        self.variant.delete(0,END)
+        self.variant.configure(placeholder_text = "Variant")
+        self.size.delete(0,END)
+        self.size.configure(placeholder_text = "Size")
+
+    def add_to_treeview_variant(self):
+        products = database.fetch_variants()
         self.tree.delete(*self.tree.get_children())
         for i in products:
             self.tree.insert('', END, values=i)
@@ -1147,5 +1433,5 @@ class App(customtkinter.CTk):
 
 if __name__ == "__main__":
     app = App()
-    app.orders()
+    app.home()
     app.mainloop()
